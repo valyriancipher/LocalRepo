@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Calculator</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: Arial, Helvetica, sans-serif;
+        background: linear-gradient(135deg, #1f2937, #111827);
+        color: #f3f4f6;
+      }
+
+      .calculator {
+        width: min(90vw, 360px);
+        background: rgba(17, 24, 39, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+      }
+
+      .display {
+        min-height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+        font-size: clamp(2rem, 5vw, 2.7rem);
+        overflow: hidden;
+        word-break: break-all;
+      }
+
+      .buttons {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+
+      button {
+        border: none;
+        border-radius: 12px;
+        padding: 18px 10px;
+        font-size: 1.2rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.12s ease, opacity 0.12s ease;
+      }
+
+      button:hover {
+        opacity: 0.95;
+      }
+
+      button:active {
+        transform: translateY(1px) scale(0.99);
+      }
+
+      .num {
+        background: #374151;
+        color: white;
+      }
+
+      .op {
+        background: #f59e0b;
+        color: #111827;
+      }
+
+      .func {
+        background: #d1d5db;
+        color: #111827;
+      }
+
+      .zero {
+        grid-column: span 2;
+      }
+
+      .equal {
+        grid-column: span 2;
+        background: #22c55e;
+        color: #04130a;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="calculator">
+      <div id="display" class="display">0</div>
+      <div class="buttons">
+        <button class="func" data-action="clear">C</button>
+        <button class="func" data-action="delete">DEL</button>
+        <button class="func" data-action="percent">%</button>
+        <button class="op" data-action="operator" data-value="/">÷</button>
+
+        <button class="num" data-value="7">7</button>
+        <button class="num" data-value="8">8</button>
+        <button class="num" data-value="9">9</button>
+        <button class="op" data-action="operator" data-value="*">×</button>
+
+        <button class="num" data-value="4">4</button>
+        <button class="num" data-value="5">5</button>
+        <button class="num" data-value="6">6</button>
+        <button class="op" data-action="operator" data-value="-">−</button>
+
+        <button class="num" data-value="1">1</button>
+        <button class="num" data-value="2">2</button>
+        <button class="num" data-value="3">3</button>
+        <button class="op" data-action="operator" data-value="+">+</button>
+
+        <button class="num zero" data-value="0">0</button>
+        <button class="num" data-value=".">.</button>
+        <button class="equal" data-action="calculate">=</button>
+      </div>
+    </div>
+
+    <script>
+      const display = document.getElementById('display');
+      let currentValue = '0';
+      let storedValue = null;
+      let operator = null;
+      let waitingForNextValue = false;
+
+      function updateDisplay() {
+        display.textContent = currentValue;
+      }
+
+      function appendNumber(number) {
+        if (waitingForNextValue) {
+          currentValue = number;
+          waitingForNextValue = false;
+        } else {
+          currentValue = currentValue === '0' && number !== '.' ? number : currentValue + number;
+        }
+
+        if (number === '.' && currentValue.includes('.')) {
+          currentValue = currentValue.replace(/\.(?=.*\.)/, '');
+        }
+
+        updateDisplay();
+      }
+
+      function handleNumberInput(value) {
+        if (value === '.') {
+          if (currentValue.includes('.')) {
+            return;
+          }
+          currentValue = currentValue === '0' ? '0.' : currentValue + '.';
+          updateDisplay();
+          return;
+        }
+
+        appendNumber(value);
+      }
+
+      function performCalculation(first, second, op) {
+        switch (op) {
+          case '+':
+            return first + second;
+          case '-':
+            return first - second;
+          case '*':
+            return first * second;
+          case '/':
+            return second === 0 ? 'Error' : first / second;
+          default:
+            return second;
+        }
+      }
+
+      function selectOperator(nextOperator) {
+        const inputValue = Number(currentValue);
+
+        if (storedValue === null) {
+          storedValue = inputValue;
+        } else if (operator) {
+          const result = performCalculation(storedValue, inputValue, operator);
+          currentValue = String(result);
+          storedValue = result;
+        }
+
+        waitingForNextValue = true;
+        operator = nextOperator;
+        updateDisplay();
+      }
+
+      function clearCalculator() {
+        currentValue = '0';
+        storedValue = null;
+        operator = null;
+        waitingForNextValue = false;
+        updateDisplay();
+      }
+
+      function deleteLastDigit() {
+        if (waitingForNextValue) {
+          return;
+        }
+
+        if (currentValue.length <= 1) {
+          currentValue = '0';
+        } else {
+          currentValue = currentValue.slice(0, -1);
+        }
+
+        updateDisplay();
+      }
+
+      function applyPercent() {
+        const value = Number(currentValue) / 100;
+        currentValue = String(value);
+        updateDisplay();
+      }
+
+      function calculateResult() {
+        if (storedValue === null || operator === null || waitingForNextValue) {
+          return;
+        }
+
+        const result = performCalculation(storedValue, Number(currentValue), operator);
+        currentValue = String(result);
+        storedValue = null;
+        operator = null;
+        waitingForNextValue = false;
+        updateDisplay();
+      }
+
+      document.querySelectorAll('.num').forEach((button) => {
+        button.addEventListener('click', () => {
+          handleNumberInput(button.dataset.value);
+        });
+      });
+
+      document.querySelectorAll('.op').forEach((button) => {
+        button.addEventListener('click', () => {
+          selectOperator(button.dataset.value);
+        });
+      });
+
+      document.querySelector('[data-action="clear"]').addEventListener('click', clearCalculator);
+      document.querySelector('[data-action="delete"]').addEventListener('click', deleteLastDigit);
+      document.querySelector('[data-action="percent"]').addEventListener('click', applyPercent);
+      document.querySelector('[data-action="calculate"]').addEventListener('click', calculateResult);
+
+      document.addEventListener('keydown', (event) => {
+        const { key } = event;
+
+        if (/^[0-9]$/.test(key)) {
+          handleNumberInput(key);
+        } else if (key === '.') {
+          handleNumberInput('.');
+        } else if (['+', '-', '*', '/'].includes(key)) {
+          selectOperator(key);
+        } else if (key === 'Enter' || key === '=') {
+          calculateResult();
+        } else if (key === 'Backspace') {
+          deleteLastDigit();
+        } else if (key === 'Escape') {
+          clearCalculator();
+        }
+      });
+
+      updateDisplay();
+    </script>
+  </body>
+</html>
